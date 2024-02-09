@@ -87,8 +87,8 @@ enum class Enc : std::uint8_t
 namespace codepoint
 {
     inline static constexpr char32_t invalid = U'�'; // replacement character '\u{FFFD}'
-    //inline static constexpr char32_t null = U'\0';
-    //inline static constexpr char32_t bom = '\uFEFF'; // Zero Width No-Break Space (BOM)
+    inline static constexpr char32_t null = U'\0';
+    //inline static constexpr char32_t bom = U'\uFEFF'; // Zero Width No-Break Space (BOM)
 }
 
 
@@ -113,15 +113,15 @@ namespace flag
 // auto [enc, bom_size] = utxt::detect_encoding_of(bytes);
 struct bom_ret_t final { Enc enc; std::uint8_t bom_size; };
 bom_ret_t constexpr detect_encoding_of(const std::string_view bytes)
-   {//      +--------------+-------------+-------+
-    //      |  Encoding    |   Bytes     | Chars |
-    //      |--------------|-------------|-------|
-    //      | UTF-8        | EF BB BF    | ï»¿   |
-    //      | UTF-16 (LE)  | FF FE       | ÿþ    |
-    //      | UTF-16 (BE)  | FE FF       | þÿ    |
-    //      | UTF-32 (LE)  | FF FE 00 00 | ÿþ..  |
-    //      | UTF-32 (BE)  | 00 00 FE FF | ..þÿ  |
-    //      +--------------+-------------+-------+
+   {// +-----------+-------------+
+    // | Encoding  |   Bytes     |
+    // |-----------|-------------|
+    // | utf-8     | EF BB BF    |
+    // | utf-16-be | FE FF       |
+    // | utf-16-le | FF FE       |
+    // | utf-32-be | 00 00 FE FF |
+    // | utf-32-le | FF FE 00 00 |
+    // +-----------+-------------+
     using enum Enc;
     if( bytes.size()>2 ) [[likely]]
        {
@@ -400,7 +400,7 @@ template<Enc ENC> class bytes_buffer_t final
        {
         return { m_current_byte_offset };
        }
-    constexpr void restore_context(const context_t context) noexcept
+    constexpr void restore_context(const context_t& context) noexcept
        {
         m_current_byte_offset = context.current_byte_offset;
        }
@@ -421,7 +421,7 @@ template<Enc ENC> class bytes_buffer_t final
 
     [[nodiscard]] constexpr std::string_view get_view_between(const std::size_t from_byte_pos, const std::size_t to_byte_pos) const noexcept
        {
-        assert( from_byte_pos<=to_byte_pos and to_byte_pos<=m_byte_buf.size() );
+        assert( from_byte_pos<=to_byte_pos );
         return m_byte_buf.substr(from_byte_pos, to_byte_pos-from_byte_pos);
        }
 
