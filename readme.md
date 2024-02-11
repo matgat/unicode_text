@@ -1,8 +1,9 @@
 ## [unicode_text](https://github.com/matgat/unicode_text.git)
 [![linux-test](https://github.com/matgat/unicode_text/actions/workflows/linux-test.yml/badge.svg)](https://github.com/matgat/unicode_text/actions/workflows/linux-test.yml)
 [![ms-test](https://github.com/matgat/unicode_text/actions/workflows/ms-test.yml/badge.svg)](https://github.com/matgat/unicode_text/actions/workflows/ms-test.yml)
+[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](http://unlicense.org/)
 
-A single header c++ library providing a collection of c++ constexpr function
+A single header c++ library providing a collection of c++ `constexpr` function
 templates for [unicode](https://www.unicode.org) encoding and decoding.
 
 [basic example](https://gcc.godbolt.org/z/6EWcvKx7h)
@@ -20,9 +21,9 @@ int main()
 }
 ```
 
-
-## Features
-* Decoding errors are handled returning/inserting the replacement codepoint `�` (`'\uFFFD'`, `utxt::codepoint::invalid`)
+### Features
+* Not throwing, decoding errors are handled returning/inserting the replacement codepoint `�` (`'\uFFFD'`, `utxt::codepoint::invalid`)
+* Needs a `c++23` compiler
 
 
 ## Encodings enumeration
@@ -36,21 +37,22 @@ int main()
 | `UTF32LE` | *utf-32* little-endian |
 | `UTF32BE` | *utf-32* big-endian    |
 
-No support for 8-bit encodings, it's time to drop them.
+> [!NOTE]
+> No support for 8-bit encodings and related *codepages*: it's time to drop them.
 
 
 ## API documentation
 
-
+---
 ### Decode bytes to *utf-32* string
 - Function
-  - `to_utf32<INENC>()` or `to_utf32()`
+  - `to_utf32<INENC>(…)` or `to_utf32(…)`
 - Inputs
   - `std::string_view` encoded as `INENC` or `std::u8string_view`
 - Return value
   - `std::u32string`
 - Description
-  - Converts bytes a *utf-32* string
+  - Converts bytes to a *utf-32* string
 
 [example](https://gcc.godbolt.org/z/co81s7PYx)
 
@@ -61,14 +63,14 @@ std::u32string u32str1 = utxt::to_utf32<UTF16LE>(in_bytes);
 std::u32string u32str2 = utxt::to_utf32(u8"..."sv);
 ```
 
-
-### Encode *utf-32* to *utf-8* bytes
+---
+### Encode *utf-32* to *utf-8*
 - Function
-  - `to_utf8()`
+  - `to_utf8(…)
 - Inputs
   - `std::u32string_view` or `char32_t`
 - Return value
-  - `std::string` bytes encoded as *utf-8*
+  - `std::string` bytes encoded as *utf-8* (avoiding `std::u8string` until better support in *stdlib*)
 - Description
   - Encodes a `char32_t` string or codepoint to a *utf-8* string
 
@@ -79,20 +81,20 @@ std::cout << utxt::to_utf8(U"..."sv)
           << utxt::to_utf8(U'a');
 ```
 
-
+---
 ### Encode *utf-32* to bytes
 
 - Function
-  - `encode_as<OUTENC>()`
-  - `encode_as()` (if `OUTENC` is not known at compile time)
+  - `encode_as<OUTENC>(…)`
+  - `encode_as(OUTENC,…)` (if `OUTENC` is not known at compile time)
 - Inputs
   - `utxt::Enc OUTENC` output encoding
   - `std::u32string_view` or `char32_t` codepoints to encode
 - Return value
-  - `std::string` encoded bytes
+  - `std::string` encoded bytes as `OUTENC`
 - Description
-  - Encodes a `char32_t` string or codepoint
-    The run time version contains a `switch` that instantiates the correct template
+  - Encodes a `char32_t` string or codepoint.
+    *The run time version contains a `switch` that instantiates the correct template*
 
 [example](https://gcc.godbolt.org/z/5eMWxar1Y)
 
@@ -103,51 +105,20 @@ std::string out_bytes2 = utxt::encode_as(UTF16BE, U"..."sv);
 ```
 
 
-### Re-encode bytes
-- Functions
-  - `reencode<INENC,OUTENC>()`
-- Inputs
-  - `utxt::Enc INENC` input encoding
-  - `utxt::Enc OUTENC` output encoding
-  - `std::string_view` input bytes encoded as `INENC`
-- Return value
-  - `std::string` output bytes encoded encoded as `OUTENC`
-- Description
-  - Re-encodes a string of bytes from one encoding to another
-
-[example](https://gcc.godbolt.org/z/rrsj6cnf4)
-
-```cpp
-using enum utxt::Enc;
-std::string_view in_bytes = "..."sv;
-std::string out_bytes = utxt::reencode<UTF8, UTF16LE>(in_bytes);
-```
-
-An alternate function that takes a buffer and returns a `string_view`
-is provided to skip the re-encoding in case `INENC==OUTENC`:
-
-[example](https://gcc.godbolt.org/z/Kno69nKE5)
-
-```cpp
-std::string_view in_bytes = "..."sv;
-std::string maybe_reencoded_buf;
-std::string_view out_bytes = utxt::reencode_if_necessary<INENC,OUTENC>(in_bytes, maybe_reencoded_buf);
-```
-
-
+---
 ### Re-encode bytes detecting input encoding
 - Function
-  - `encode_as<OUTENC>()`
-  - `encode_as()` (if `OUTENC` is not known at compile time)
+  - `encode_as<OUTENC>(…)`
+  - `encode_as(OUTENC,…)` (if `OUTENC` is not known at compile time)
 - Inputs
   - `utxt::Enc OUTENC` output encoding
   - `std::string_view` input bytes of unknown encoding
   - `utxt::flags_t` if specified `flag::SKIP_BOM` output won't contain the byte order mask
 - Return value
-  - `std::string`
+  - `std::string` output bytes encoded as `OUTENC`
 - Description
-  - Re-encodes a string of bytes (detecting its encoding) to a given encoding
-    The run time version contains a `switch` that instantiates the correct template
+  - Re-encodes a string of bytes (detecting its encoding) to a given encoding.
+    *The run time version contains a `switch` that instantiates the correct template*
 
 [example](https://gcc.godbolt.org/z/jf3Wh9jrK)
 
@@ -174,9 +145,43 @@ std::string_view out_bytes2 = utxt::encode_if_necessary_as(UTF8, in_bytes, maybe
 ```
 
 
+---
+### Re-encode bytes
+- Functions
+  - `reencode<INENC,OUTENC>(…)`
+- Inputs
+  - `utxt::Enc INENC` input encoding
+  - `utxt::Enc OUTENC` output encoding
+  - `std::string_view` input bytes encoded as `INENC`
+- Return value
+  - `std::string` output bytes encoded as `OUTENC`
+- Description
+  - Re-encodes a string of bytes from one encoding to another
 
-## Low level functions
+[example](https://gcc.godbolt.org/z/rrsj6cnf4)
 
+```cpp
+using enum utxt::Enc;
+std::string_view in_bytes = "..."sv;
+std::string out_bytes = utxt::reencode<UTF8, UTF16LE>(in_bytes);
+```
+
+An alternate function that takes a buffer and returns a `string_view`
+is provided to skip the re-encoding in case `INENC==OUTENC`:
+
+[example](https://gcc.godbolt.org/z/Kno69nKE5)
+
+```cpp
+std::string_view in_bytes = "..."sv;
+std::string maybe_reencoded_buf;
+std::string_view out_bytes = utxt::reencode_if_necessary<INENC,OUTENC>(in_bytes, maybe_reencoded_buf);
+```
+
+
+---
+## Low level facilities
+
+---
 ### `bytes_buffer_t` class
 
 A class that represents a byte stream interpreted with a given encoding.
@@ -195,17 +200,17 @@ if( bytes_buf.has_bytes() )
    }
 ```
 
-
+---
 ### Encoding Detection
 
 - Function
-  - `detect_encoding_of()`
+  - `detect_encoding_of(…)`
 - Inputs
   - `std::string_view` raw bytes
 - Return value
   - `struct{ Enc enc; std::uint8_t bom_size; }`
 - Description
-  - Detects the encoding of raw bytes - it just detects the byte order mask, no data euristics
+  - Detects the encoding of raw bytes - it just detects the byte order mask, no euristic analysis of bytes
 
 [example](https://gcc.godbolt.org/z/3hTa49sbE)
 
@@ -220,12 +225,12 @@ switch(bytes_enc)
    }
 ```
 
-
+---
 ### Decoding a single codepoint
 - Function
-  - `extract_codepoint<Enc>()`
+  - `extract_codepoint<Enc>(…)`
 - Inputs
-  - `std::string_view` raw bytes
+  - `std::string_view` raw bytes encoded as `Enc`
   - `std::size_t&` current position
 - Preconditions
   - Assumes enough remaining bytes to extract the codepoint, undefined behavior otherwise
@@ -246,13 +251,13 @@ const char32_t cp = utxt::extract_codepoint<UTF16BE>(bytes, pos);
 assert( cp == U'🔥' );
 ```
 
-
+---
 ### Encoding a single codepoint
 - Function
-  - `append_codepoint<Enc>()`
+  - `append_codepoint<Enc>(…)`
 - Inputs
   - `char32_t` codepoint to encode
-  - `std::string&` destination bytes
+  - `std::string&` destination bytes encoded as `Enc`
 - Return value
   - `void`
 - Description
@@ -262,6 +267,25 @@ assert( cp == U'🔥' );
 
 ```cpp
 std::string bytes = "a ";
-char32_t codepoint = U'🍌';
+char32_t codepoint = U'🔥';
 utxt::append_codepoint<UTF8>(codepoint, bytes);
+assert( bytes == "a \xF0\x9F\x94\xA5"sv);
 ```
+
+
+## Build
+Build with at least `-std=c++23` (`/std:c++23` in case of *msvc*).
+
+### Testing
+
+```sh
+$ git clone https://github.com/matgat/unicode_text.git
+$ cd unicode_text
+$ curl -O https://raw.githubusercontent.com/boost-ext/ut/master/include/boost/ut.hpp
+$ g++ -std=c++23 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -o test test.cpp && ./test
+```
+> [!NOTE]
+> On windows:
+> ```bat
+> $ cl /std:c++latest /permissive- /utf-8 /W4 /WX /EHsc test.cpp
+> ```
